@@ -1,15 +1,39 @@
-# Debian package from CoreDNS Git
+# Debian package for CoreDNS
 
-Copy the `debian` directory in the git repository of CoreDNS and then call:
+Install the build dependencies on Debian:
 
-~~~
-dpkg-buildpackage -us -uc -b --target-arch amd64
-~~~
+```sh
+sudo apt install build-essential debhelper golang-any git ca-certificates
+```
 
-Other archs are available:
+Build from a local source directory, a release tag, or the latest stable tag:
 
-* armhf
-* arm64
+```sh
+./build.sh --source ../coredns
+./build.sh --tag TAG
+./build.sh
+```
 
-The `Makefile.release` in the CoreDNS repo will build Darwin and Windows builds before it goes onto
-the Linux build, so you'll have to wait a bit before your `.dep` to show up.
+Use `--repo URL` to select another Git repository and `--output DIR` to change
+the output directory from `./build`. Builds use a temporary source copy and
+produce native-architecture `.deb`, `.buildinfo`, and `.changes` files.
+
+The Go version comes from the selected CoreDNS source. The package changelog
+uses its release summary and noteworthy changes from `notes/coredns-VERSION.md`,
+falling back to the one-line `debian/changelog` if no release text is available.
+
+Build in a Debian container with Podman (or replace `podman` with `docker`):
+
+```sh
+podman build -f Containerfile -t coredns-debian .
+mkdir -p build
+podman run --rm -v "$(pwd)/build:/out" coredns-debian
+```
+
+This builds the latest stable tag and writes the package files to `./build`.
+Append `--tag TAG` to select a release. To use local sources instead:
+
+```sh
+podman run --rm -v "$(pwd)/build:/out" -v "$(realpath ../coredns):/source:ro" \
+    coredns-debian --source /source
+```
